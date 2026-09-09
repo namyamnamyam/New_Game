@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<meta name="theme-color" content="#080a12" />
+<title>NECRO // SOUL SWARM</title>
+<style>
+  :root{
+    --bg:#080a12; --panel:rgba(10,13,24,.82); --line:rgba(177,118,255,.26);
+    --violet:#b676ff; --cyan:#64f0ff; --lime:#9dff9c; --red:#ff5f78; --text:#eef1ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    touch-action:none;-webkit-user-select:none;user-select:none}
+  body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.34;
+    background:
+      radial-gradient(circle at 50% 28%,rgba(139,72,255,.15),transparent 38%),
+      linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+    background-size:auto,28px 28px,28px 28px}
+  #game{position:fixed;inset:0;width:100%;height:100%;display:block}
+  #hud{position:fixed;inset:0;pointer-events:none;padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+  .top{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+  .brand{font-weight:900;letter-spacing:.11em;font-size:13px;text-shadow:0 0 18px rgba(182,118,255,.6)}
+  .brand b{color:var(--violet)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .chip{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(10px);border-radius:999px;padding:7px 10px;
+    font-size:12px;font-weight:800;box-shadow:0 8px 26px rgba(0,0,0,.22)}
+  #bars{position:absolute;left:max(14px,env(safe-area-inset-left));top:max(48px,calc(env(safe-area-inset-top) + 48px));width:min(360px,calc(100vw - 28px))}
+  .barrow{display:grid;grid-template-columns:45px 1fr 52px;align-items:center;gap:8px;margin:7px 0;font-size:11px;font-weight:900;letter-spacing:.04em}
+  .bar{height:9px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+  .fill{height:100%;width:50%;transition:width .15s}
+  #hpFill{background:linear-gradient(90deg,#ff4264,#ff8b9d)}
+  #xpFill{background:linear-gradient(90deg,#7454ff,#62e9ff)}
+  #bossWrap{display:none;position:absolute;left:50%;transform:translateX(-50%);top:max(66px,calc(env(safe-area-inset-top) + 66px));width:min(560px,76vw);text-align:center}
+  #bossName{font-size:11px;font-weight:900;letter-spacing:.16em;margin-bottom:6px;color:#ffc2d0}
+  #bossFill{background:linear-gradient(90deg,#8f1838,#ff5f78)}
+  #feed{position:absolute;right:max(14px,env(safe-area-inset-right));top:106px;width:min(280px,42vw);display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+  .feedItem{font-size:11px;font-weight:800;padding:5px 8px;border-radius:9px;background:rgba(9,11,20,.6);border:1px solid rgba(255,255,255,.07);animation:fadeFeed 2.6s forwards}
+  @keyframes fadeFeed{0%{opacity:0;transform:translateX(8px)}12%,70%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-8px)}}
+  #tip{position:absolute;left:50%;bottom:max(16px,calc(env(safe-area-inset-bottom) + 16px));transform:translateX(-50%);
+    background:rgba(8,10,18,.55);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:7px 11px;font-size:11px;opacity:.78}
+  #joystick{display:none;position:fixed;left:max(18px,env(safe-area-inset-left));bottom:max(22px,calc(env(safe-area-inset-bottom) + 22px));width:126px;height:126px;border-radius:50%;
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.10);box-shadow:inset 0 0 24px rgba(182,118,255,.08);pointer-events:auto}
+  #stick{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px;border-radius:50%;background:rgba(182,118,255,.26);border:1px solid rgba(200,158,255,.45);box-shadow:0 0 20px rgba(182,118,255,.22)}
+  #dashBtn{display:none;position:fixed;right:max(22px,env(safe-area-inset-right));bottom:max(34px,calc(env(safe-area-inset-bottom) + 34px));width:82px;height:82px;border-radius:50%;
+    border:1px solid rgba(100,240,255,.35);background:rgba(38,121,145,.16);color:#dffcff;font-weight:950;letter-spacing:.06em;pointer-events:auto}
+  #dashBtn.cool{opacity:.38}
+  .modal{display:none;position:fixed;inset:0;align-items:center;justify-content:center;padding:20px;background:rgba(3,4,10,.68);backdrop-filter:blur(7px);z-index:20}
+  .modal.show{display:flex}
+  .card{width:min(760px,100%);max-height:90vh;overflow:auto;background:linear-gradient(180deg,rgba(17,20,34,.98),rgba(9,11,20,.98));border:1px solid rgba(182,118,255,.32);border-radius:24px;padding:24px;box-shadow:0 24px 90px rgba(0,0,0,.55)}
+  h1,h2,p{margin:0}
+  .eyebrow{font-size:11px;letter-spacing:.18em;font-weight:900;color:#a9b0ca;margin-bottom:7px}
+  h1{font-size:clamp(30px,7vw,62px);line-height:.9;letter-spacing:-.04em}
+  h1 span,h2 span{color:var(--violet)}
+  .sub{margin-top:14px;color:#b9bfd2;line-height:1.55}
+  .startStats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0}
+  .statBox{padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.025)}
+  .statBox b{display:block;font-size:18px;margin-top:3px}
+  .btn{border:1px solid rgba(182,118,255,.46);background:linear-gradient(180deg,rgba(182,118,255,.25),rgba(91,57,150,.21));color:white;border-radius:14px;padding:13px 16px;font-weight:950;font-size:14px;cursor:pointer}
+  .btn:active{transform:translateY(1px)}
+  .btnRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .btn.alt{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.04)}
+  #choices{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:15px}
+  .choice{cursor:pointer;text-align:left;min-height:154px;padding:15px;border-radius:18px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.035);color:white}
+  .choice:hover{border-color:rgba(182,118,255,.48);background:rgba(182,118,255,.08)}
+  .choice .icon{font-size:27px}.choice h3{margin:7px 0 5px;font-size:16px}.choice p{font-size:12px;color:#b8bfd4;line-height:1.45}
+  .choice .lvl{display:inline-block;margin-top:9px;font-size:10px;padding:4px 6px;border-radius:7px;background:rgba(100,240,255,.10);color:#9cf5ff}
+  #gameover .card{max-width:520px;text-align:center}
+  #gameover h2{font-size:36px;margin-bottom:8px}
+  .resultGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:18px 0;text-align:left}
+  .result{padding:12px;border-radius:13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08)}
+  .result small{display:block;color:#9299b1}.result b{font-size:20px}
+  #pauseBtn,#soundBtn{position:fixed;pointer-events:auto;z-index:5;top:max(14px,env(safe-area-inset-top));width:36px;height:36px;border-radius:50%;color:white;border:1px solid rgba(255,255,255,.09);background:rgba(8,10,18,.68)}
+  #pauseBtn{right:max(14px,env(safe-area-inset-right))}
+  #soundBtn{right:max(58px,calc(env(safe-area-inset-right) + 44px))}
+  @media (pointer:coarse),(max-width:900px){
+    #joystick,#dashBtn{display:block}
+    #tip{display:none}
+    #feed{top:145px;width:45vw}
+    .chips{padding-right:88px}
+  }
+  @media (max-width:650px){
+    .card{padding:18px;border-radius:19px}
+    #choices{grid-template-columns:1fr}
+    .choice{min-height:auto}
+    .startStats{grid-template-columns:1fr 1fr 1fr}
+    #bars{top:56px}
+    .brand{font-size:11px}
+    .chip{font-size:10px;padding:6px 8px}
+  }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div class="top">
+    <div class="brand">NECRO <b>//</b> SOUL SWARM</div>
+    <div class="chips">
+      <div class="chip">⏱ <span id="time">00:00</span></div>
+      <div class="chip">☠ <span id="kills">0</span></div>
+      <div class="chip">LV.<span id="level">1</span></div>
+    </div>
+  </div>
+  <div id="bars">
+    <div class="barrow"><span>HP</span><div class="bar"><div class="fill" id="hpFill"></div></div><span id="hpText">100/100</span></div>
+    <div class="barrow"><span>SOUL</span><div class="bar"><div class="fill" id="xpFill"></div></div><span id="xpText">0/8</span></div>
+  </div>
+  <div id="bossWrap">
+    <div id="bossName">THE BONE TYRANT</div>
+    <div class="bar" style="height:11px"><div class="fill" id="bossFill"></div></div>
+  </div>
+  <div id="feed"></div>
+  <div id="tip">WASD / 방향키 이동 · SPACE 대시 · 공격은 자동</div>
+</div>
+
+<button id="soundBtn" aria-label="sound">🔊</button>
+<button id="pauseBtn" aria-label="pause">Ⅱ</button>
+<div id="joystick"><div id="stick"></div></div>
+<button id="dashBtn">DASH</button>
+
+<div class="modal show" id="start">
+  <div class="card">
+    <div class="eyebrow">ONE MORE RUN?</div>
+    <h1>NECRO<br><span>SOUL SWARM</span></h1>
+    <p class="sub">죽은 놈은 내 편이다. 적을 쓰러뜨려 영혼을 흡수하고, 해골 군단을 불려서 오래 버텨라.<br>보스는 60초마다 찾아온다.</p>
+    <div class="startStats">
+      <div class="statBox"><small>BEST TIME</small><b id="bestTime">00:00</b></div>
+      <div class="statBox"><small>BEST KILLS</small><b id="bestKills">0</b></div>
+      <div class="statBox"><small>BEST LEVEL</small><b id="bestLevel">1</b></div>
+    </div>
+    <div class="btnRow">
+      <button class="btn" id="startBtn">영혼 수확 시작</button>
+      <button class="btn alt" id="howBtn">조작법</button>
+    </div>
+    <p class="sub" id="howText" style="display:none;font-size:12px">
+      PC: WASD/방향키 이동, SPACE 대시, P 일시정지.<br>
+      모바일/아이패드: 왼쪽 조이스틱 이동, 오른쪽 DASH. 공격과 소환수는 자동.
+    </p>
+  </div>
+</div>
+
+<div class="modal" id="levelup">
+  <div class="card">
+    <div class="eyebrow">SOUL RESONANCE</div>
+    <h2>레벨 업 — <span>하나 골라</span></h2>
+    <div id="choices"></div>
+  </div>
+</div>
+
+<div class="modal" id="pause">
+  <div class="card" style="max-width:420px;text-align:center">
+    <div class="eyebrow">TIME FROZEN</div>
+    <h2>일시정지</h2>
+    <p class="sub">해골들도 잠깐 쉰다. 뼈인데 왜 쉬는진 모름.</p>
+    <div class="btnRow" style="justify-content:center"><button class="btn" id="resumeBtn">계속</button></div>
+  </div>
+</div>
+
+<div class="modal" id="gameover">
+  <div class="card">
+    <div class="eyebrow">THE DEAD OUTLIVED YOU</div>
+    <h2>개같이 멸망 ☠</h2>
+    <p class="sub" id="deathText">그래도 제법 버텼다.</p>
+    <div class="resultGrid">
+      <div class="result"><small>생존 시간</small><b id="rTime">00:00</b></div>
+      <div class="result"><small>처치</small><b id="rKills">0</b></div>
+      <div class="result"><small>레벨</small><b id="rLevel">1</b></div>
+      <div class="result"><small>최대 해골</small><b id="rSkels">2</b></div>
+    </div>
+    <div class="btnRow" style="justify-content:center">
+      <button class="btn" id="retryBtn">다시 한 판</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const canvas = document.getElementById('game'), ctx = canvas.getContext('2d');
+const $ = id => document.getElementById(id);
+const ui = {
+  time:$('time'),kills:$('kills'),level:$('level'),hpFill:$('hpFill'),hpText:$('hpText'),
+  xpFill:$('xpFill'),xpText:$('xpText'),feed:$('feed'),bossWrap:$('bossWrap'),
+  bossFill:$('bossFill'),bossName:$('bossName'),dash:$('dashBtn')
+};
+let W=0,H=0,dpr=1,last=0,running=false,paused=false,leveling=false,gameOver=false,soundOn=true;
+let keys={}, joy={x:0,y:0,active:false,id:null}, nextId=1;
+let player,enemies,bullets,souls,particles,skeletons,floaters;
+let time=0,kills=0,nextBoss=60,boss=null,spawnClock=0,shootClock=0;
+let audioCtx=null;
+
+const rand=(a,b)=>Math.random()*(b-a)+a;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const dist2=(a,b)=>{const x=a.x-b.x,y=a.y-b.y;return x*x+y*y};
+const fmt=t=>`${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;
+
+function resize(){
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  W=innerWidth; H=innerHeight;
+  canvas.width=Math.floor(W*dpr);canvas.height=Math.floor(H*dpr);
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+addEventListener('resize',resize); resize();
+
+function initAudio(){
+  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+}
+function beep(freq=240,dur=.05,type='sine',gain=.025){
+  if(!soundOn)return;
+  initAudio();
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.type=type;o.frequency.value=freq;g.gain.value=gain;
+  o.connect(g);g.connect(audioCtx.destination);o.start();
+  g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+dur);
+  o.stop(audioCtx.currentTime+dur);
+}
+
+function defaults(){
+  player={x:W/2,y:H/2,r:14,hp:100,maxHp:100,speed:230,level:1,xp:0,xpNeed:8,
+    damage:17,fireRate:.46,bulletSpeed:560,pierce:0,magnet:95,
+    dashCd:2.6,dashLeft:0,dashTime:0,invuln:0,skelDamage:11,skelRate:.72,skelMax:2,
+    soulBonus:0,regen:0,armor:0};
+  enemies=[];bullets=[];souls=[];particles=[];skeletons=[];floaters=[];
+  time=0;kills=0;nextBoss=60;boss=null;spawnClock=.2;shootClock=.25;
+  nextId=1;paused=false;leveling=false;gameOver=false;
+  ensureSkeletons();updateUI();
+}
+function ensureSkeletons(){
+  while(skeletons.length<player.skelMax){
+    skeletons.push({angle:Math.random()*Math.PI*2,orbit:44+skeletons.length*9,hitCd:0});
+  }
+  if(skeletons.length>player.skelMax)skeletons.length=player.skelMax;
+}
+function feed(text){
+  const e=document.createElement('div');e.className='feedItem';e.textContent=text;ui.feed.prepend(e);
+  setTimeout(()=>e.remove(),2700);
+}
+function updateUI(){
+  ui.time.textContent=fmt(time);ui.kills.textContent=kills;ui.level.textContent=player.level;
+  ui.hpFill.style.width=(100*player.hp/player.maxHp)+'%';ui.hpText.textContent=`${Math.ceil(player.hp)}/${player.maxHp}`;
+  ui.xpFill.style.width=(100*player.xp/player.xpNeed)+'%';ui.xpText.textContent=`${player.xp}/${player.xpNeed}`;
+  if(boss&&!boss.dead){ui.bossWrap.style.display='block';ui.bossFill.style.width=(100*boss.hp/boss.maxHp)+'%';ui.bossName.textContent=boss.name}
+  else ui.bossWrap.style.display='none';
+  ui.dash.classList.toggle('cool',player.dashLeft>0);
+  ui.dash.textContent=player.dashLeft>0?player.dashLeft.toFixed(1):'DASH';
+}
+
+const upgrades=[
+  {id:'dmg',icon:'✦',name:'어둠의 탄환',desc:'자동 공격 피해량 +7',max:8,apply:()=>player.damage+=7},
+  {id:'rate',icon:'⚡',name:'속사',desc:'공격 간격 -12%',max:7,apply:()=>player.fireRate=Math.max(.14,player.fireRate*.88)},
+  {id:'pierce',icon:'➳',name:'영혼 관통',desc:'투사체 관통 +1',max:5,apply:()=>player.pierce++},
+  {id:'skel',icon:'☠',name:'해골 증원',desc:'해골 소환수 +1',max:7,apply:()=>{player.skelMax++;ensureSkeletons()}},
+  {id:'skeldmg',icon:'🦴',name:'뼈 강화',desc:'해골 피해량 +6',max:7,apply:()=>player.skelDamage+=6},
+  {id:'speed',icon:'◈',name:'망자의 걸음',desc:'이동 속도 +12%',max:5,apply:()=>player.speed*=1.12},
+  {id:'magnet',icon:'◎',name:'영혼 흡인',desc:'영혼 흡수 범위 +35',max:5,apply:()=>player.magnet+=35},
+  {id:'hp',icon:'♥',name:'금단의 생명력',desc:'최대 체력 +25, 즉시 회복',max:5,apply:()=>{player.maxHp+=25;player.hp=Math.min(player.maxHp,player.hp+35)}},
+  {id:'regen',icon:'✚',name:'사령 재생',desc:'초당 체력 회복 +0.7',max:5,apply:()=>player.regen+=.7},
+  {id:'armor',icon:'⬡',name:'뼈 갑옷',desc:'받는 피해 8% 감소',max:5,apply:()=>player.armor=Math.min(.4,player.armor+.08)},
+  {id:'dash',icon:'≫',name:'망령 질주',desc:'대시 재사용 -15%',max:5,apply:()=>player.dashCd*=.85},
+  {id:'soul',icon:'✧',name:'탐욕의 혼',desc:'영혼 획득량 +25%',max:4,apply:()=>player.soulBonus+=.25}
+];
+const upLv={};
+function resetUpgradeLevels(){for(const u of upgrades)upLv[u.id]=0}
+function pickUpgrades(){
+  leveling=true;paused=true;$('levelup').classList.add('show');
+  const available=upgrades.filter(u=>upLv[u.id]<(u.max||99));
+  const picks=[];
+  while(picks.length<Math.min(3,available.length)){
+    const u=available[Math.floor(Math.random()*available.length)];
+    if(!picks.includes(u))picks.push(u);
+  }
+  $('choices').innerHTML='';
+  picks.forEach(u=>{
+    const b=document.createElement('button');b.className='choice';
+    b.innerHTML=`<div class="icon">${u.icon}</div><h3>${u.name}</h3><p>${u.desc}</p><span class="lvl">현재 ${upLv[u.id]} / ${u.max}</span>`;
+    b.onclick=()=>{upLv[u.id]++;u.apply();$('levelup').classList.remove('show');leveling=false;paused=false;last=performance.now();beep(610,.08,'triangle',.035);feed(`${u.name} 강화`);};
+    $('choices').appendChild(b);
+  });
+}
+function gainXp(n){
+  player.xp+=Math.max(1,Math.round(n*(1+player.soulBonus)));
+  if(player.xp>=player.xpNeed){
+    player.xp-=player.xpNeed;player.level++;player.xpNeed=Math.ceil(player.xpNeed*1.23+2);
+    pickUpgrades();
+  }
+}
+
+function spawnEnemy(type='normal'){
+  const edge=Math.floor(Math.random()*4), pad=36;
+  let x,y;
+  if(edge===0){x=rand(-pad,W+pad);y=-pad}
+  if(edge===1){x=W+pad;y=rand(-pad,H+pad)}
+  if(edge===2){x=rand(-pad,W+pad);y=H+pad}
+  if(edge===3){x=-pad;y=rand(-pad,H+pad)}
+  const scale=1+time/95;
+  let e={id:nextId++,x,y,r:12,hp:28*scale,maxHp:28*scale,speed:54+Math.min(70,time*.28),damage:10+time*.045,color:'#8568c9',dead:false,hitFlash:0,type};
+  const roll=Math.random();
+  if(type==='boss'){
+    const names=['THE BONE TYRANT','GRAVE COLOSSUS','THE HOLLOW KING','CRYPT MOTHER'];
+    e.r=34;e.maxHp=e.hp=520*(1+time/80);e.speed=42+time*.08;e.damage=24+time*.06;e.color='#ff5574';e.type='boss';e.name=names[Math.floor(time/60-1)%names.length];boss=e;
+    feed('⚠ 보스 출현');beep(90,.4,'sawtooth',.055);
+  }else if(roll<.09+Math.min(.08,time/900)){
+    e.r=17;e.maxHp=e.hp*=2.3;e.speed*=.72;e.damage*=1.35;e.color='#d65d92';e.type='brute';
+  }else if(roll<.23){
+    e.r=9;e.maxHp=e.hp*=.62;e.speed*=1.62;e.damage*=.7;e.color='#54ced3';e.type='runner';
+  }
+  enemies.push(e);
+}
+function killEnemy(e){
+  if(e.dead)return;e.dead=true;kills++;
+  const soulCount=e.type==='boss'?12:e.type==='brute'?3:1;
+  for(let i=0;i<soulCount;i++) souls.push({x:e.x+rand(-8,8),y:e.y+rand(-8,8),vx:rand(-30,30),vy:rand(-30,30),r:e.type==='boss'?5:4,val:e.type==='boss'?2:1});
+  burst(e.x,e.y,e.color,e.type==='boss'?30:9);
+  if(e.type==='boss'){boss=null;feed('☠ 보스 처치 +대량 영혼');beep(190,.12,'square',.04);setTimeout(()=>beep(380,.12,'triangle',.035),90)}
+}
+function burst(x,y,color,n=8){
+  for(let i=0;i<n;i++)particles.push({x,y,vx:rand(-130,130),vy:rand(-130,130),life:rand(.25,.7),max:.7,r:rand(1,3.6),color});
+}
+function floater(x,y,text,color='#fff'){
+  floaters.push({x,y,text,color,life:.65,vy:-36});
+}
+
+function shoot(){
+  if(!enemies.length)return;
+  let target=null,best=Infinity;
+  for(const e of enemies){if(e.dead)continue;const d=dist2(player,e);if(d<best){best=d;target=e}}
+  if(!target)return;
+  const a=Math.atan2(target.y-player.y,target.x-player.x);
+  bullets.push({x:player.x,y:player.y,vx:Math.cos(a)*player.bulletSpeed,vy:Math.sin(a)*player.bulletSpeed,r:5,life:1.7,damage:player.damage,pierce:player.pierce,hit:new Set()});
+  beep(260+Math.random()*30,.025,'triangle',.012);
+}
+function dash(){
+  if(!running||paused||player.dashLeft>0||player.dashTime>0)return;
+  let x=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0);
+  let y=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0);
+  if(Math.hypot(joy.x,joy.y)>.1){x=joy.x;y=joy.y}
+  if(Math.hypot(x,y)<.1){x=1;y=0}
+  const l=Math.hypot(x,y)||1;player.dashX=x/l;player.dashY=y/l;player.dashTime=.16;player.dashLeft=player.dashCd;player.invuln=.22;
+  burst(player.x,player.y,'#64f0ff',10);beep(120,.08,'sawtooth',.03);
+}
+
+function update(dt){
+  if(!running||paused)return;
+  time+=dt;
+  if(player.regen>0)player.hp=Math.min(player.maxHp,player.hp+player.regen*dt);
+  player.invuln=Math.max(0,player.invuln-dt);player.dashLeft=Math.max(0,player.dashLeft-dt);
+
+  let mx=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0);
+  let my=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0);
+  if(Math.hypot(joy.x,joy.y)>.08){mx=joy.x;my=joy.y}
+  let ml=Math.hypot(mx,my); if(ml>1){mx/=ml;my/=ml}
+  if(player.dashTime>0){
+    player.dashTime-=dt;player.x+=player.dashX*620*dt;player.y+=player.dashY*620*dt;
+    if(Math.random()<.65)particles.push({x:player.x,y:player.y,vx:rand(-25,25),vy:rand(-25,25),life:.18,max:.18,r:rand(2,5),color:'#64f0ff'});
+  } else { player.x+=mx*player.speed*dt;player.y+=my*player.speed*dt; }
+  player.x=clamp(player.x,18,W-18);player.y=clamp(player.y,18,H-18);
+
+  spawnClock-=dt;
+  if(spawnClock<=0){
+    const count=1+(time>90&&Math.random()<.25?1:0)+(time>180&&Math.random()<.18?1:0);
+    for(let i=0;i<count;i++)spawnEnemy();
+    spawnClock=Math.max(.16,.82-time*.0023);
+  }
+  if(time>=nextBoss){spawnEnemy('boss');nextBoss+=60}
+
+  shootClock-=dt;
+  if(shootClock<=0){shoot();shootClock=player.fireRate}
+
+  for(const b of bullets){
+    b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
+    for(const e of enemies){
+      if(e.dead||b.hit.has(e.id))continue;
+      const rr=b.r+e.r;
+      if((b.x-e.x)**2+(b.y-e.y)**2<rr*rr){
+        b.hit.add(e.id);e.hp-=b.damage;e.hitFlash=.08;floater(e.x,e.y,Math.round(b.damage),'#c8f8ff');
+        burst(b.x,b.y,'#82d7ff',3);
+        if(e.hp<=0)killEnemy(e);
+        if(b.pierce>0)b.pierce--;else{b.life=0;break}
+      }
+    }
+  }
+  bullets=bullets.filter(b=>b.life>0&&b.x>-80&&b.x<W+80&&b.y>-80&&b.y<H+80);
+
+  for(const e of enemies){
+    if(e.dead)continue;e.hitFlash=Math.max(0,e.hitFlash-dt);
+    const a=Math.atan2(player.y-e.y,player.x-e.x);e.x+=Math.cos(a)*e.speed*dt;e.y+=Math.sin(a)*e.speed*dt;
+    const rr=e.r+player.r;
+    if((e.x-player.x)**2+(e.y-player.y)**2<rr*rr && player.invuln<=0){
+      const dmg=e.damage*(1-player.armor);player.hp-=dmg;player.invuln=.55;
+      const push=18;e.x-=Math.cos(a)*push;e.y-=Math.sin(a)*push;
+      burst(player.x,player.y,'#ff5f78',10);floater(player.x,player.y,'-'+Math.round(dmg),'#ff8194');beep(70,.12,'square',.04);
+      if(player.hp<=0){player.hp=0;endGame()}
+    }
+  }
+  enemies=enemies.filter(e=>!e.dead);
+
+  skeletons.forEach((s,i)=>{
+    s.angle+=dt*(1.15+i*.03);s.hitCd=Math.max(0,s.hitCd-dt);
+    s.x=player.x+Math.cos(s.angle)*s.orbit;s.y=player.y+Math.sin(s.angle)*s.orbit;
+    if(s.hitCd<=0){
+      let target=null,best=84*84;
+      for(const e of enemies){if(e.dead)continue;const d=dist2(s,e);if(d<best){best=d;target=e}}
+      if(target){
+        target.hp-=player.skelDamage;target.hitFlash=.06;s.hitCd=player.skelRate;
+        burst(target.x,target.y,'#b676ff',3);floater(target.x,target.y,Math.round(player.skelDamage),'#d7baff');
+        if(target.hp<=0)killEnemy(target);
+      }
+    }
+  });
+
+  for(const s of souls){
+    s.vx*=Math.pow(.1,dt);s.vy*=Math.pow(.1,dt);s.x+=s.vx*dt;s.y+=s.vy*dt;
+    const d=Math.hypot(player.x-s.x,player.y-s.y);
+    if(d<player.magnet){
+      const pull=(1-d/player.magnet)*850+100;s.x+=(player.x-s.x)/Math.max(1,d)*pull*dt;s.y+=(player.y-s.y)/Math.max(1,d)*pull*dt;
+    }
+    if(d<18){s.dead=true;gainXp(s.val);beep(530+Math.random()*100,.02,'sine',.009)}
+  }
+  souls=souls.filter(s=>!s.dead);
+
+  for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.96;p.vy*=.96;p.life-=dt}
+  particles=particles.filter(p=>p.life>0);
+  for(const f of floaters){f.y+=f.vy*dt;f.life-=dt}
+  floaters=floaters.filter(f=>f.life>0);
+  updateUI();
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#080a12';ctx.fillRect(0,0,W,H);
+
+  const g=ctx.createRadialGradient(player?player.x:W/2,player?player.y:H/2,20,player?player.x:W/2,player?player.y:H/2,Math.max(W,H)*.62);
+  g.addColorStop(0,'rgba(73,44,128,.22)');g.addColorStop(1,'rgba(2,3,8,.02)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+
+  ctx.strokeStyle='rgba(182,118,255,.045)';ctx.lineWidth=1;
+  const grid=56, ox=((player?.x||0)*-.05)%grid, oy=((player?.y||0)*-.05)%grid;
+  for(let x=ox;x<W;x+=grid){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=oy;y<H;y+=grid){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+
+  for(const soul of souls){
+    ctx.beginPath();ctx.arc(soul.x,soul.y,soul.r*2.4,0,Math.PI*2);ctx.fillStyle='rgba(100,240,255,.09)';ctx.fill();
+    ctx.beginPath();ctx.arc(soul.x,soul.y,soul.r,0,Math.PI*2);ctx.fillStyle='#6df3ff';ctx.fill();
+  }
+
+  for(const e of enemies){
+    ctx.save();ctx.translate(e.x,e.y);
+    if(e.type==='boss'){ctx.rotate(time*.4);ctx.strokeStyle='rgba(255,95,120,.28)';ctx.lineWidth=2;for(let k=0;k<3;k++){ctx.rotate(Math.PI*2/3);ctx.strokeRect(-e.r*1.15,-e.r*1.15,e.r*2.3,e.r*2.3)}}
+    ctx.beginPath();ctx.arc(0,0,e.r+4,0,Math.PI*2);ctx.fillStyle=e.hitFlash>0?'rgba(255,255,255,.28)':'rgba(255,255,255,.035)';ctx.fill();
+    ctx.beginPath();ctx.arc(0,0,e.r,0,Math.PI*2);ctx.fillStyle=e.hitFlash>0?'#fff':e.color;ctx.fill();
+    ctx.fillStyle='#090a11';ctx.beginPath();ctx.arc(-e.r*.32,-2,Math.max(2,e.r*.15),0,Math.PI*2);ctx.arc(e.r*.32,-2,Math.max(2,e.r*.15),0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+
+  for(const b of bullets){
+    ctx.beginPath();ctx.arc(b.x,b.y,b.r*2.4,0,Math.PI*2);ctx.fillStyle='rgba(100,240,255,.10)';ctx.fill();
+    ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fillStyle='#a4f7ff';ctx.fill();
+  }
+
+  for(const s of skeletons){
+    if(s.x==null)continue;
+    ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.angle+Math.PI/2);
+    ctx.shadowBlur=12;ctx.shadowColor='#b676ff';ctx.fillStyle='#d9d2e8';
+    ctx.beginPath();ctx.arc(0,0,8,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#161321';ctx.beginPath();ctx.arc(-2.8,-1.5,1.5,0,Math.PI*2);ctx.arc(2.8,-1.5,1.5,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#c3a8eb';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,8);ctx.lineTo(0,18);ctx.moveTo(-7,12);ctx.lineTo(7,12);ctx.stroke();ctx.restore();
+  }
+
+  if(player){
+    ctx.save();ctx.translate(player.x,player.y);
+    ctx.beginPath();ctx.arc(0,0,player.magnet,0,Math.PI*2);ctx.strokeStyle='rgba(100,240,255,.025)';ctx.stroke();
+    ctx.rotate(time*.7);ctx.strokeStyle='rgba(182,118,255,.22)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*1.6);ctx.stroke();ctx.rotate(-time*1.4);
+    ctx.shadowBlur=22;ctx.shadowColor=player.invuln>0?'#64f0ff':'#b676ff';
+    ctx.beginPath();ctx.arc(0,0,player.r,0,Math.PI*2);ctx.fillStyle=player.invuln>0&&Math.floor(time*20)%2?'#dffcff':'#b676ff';ctx.fill();
+    ctx.fillStyle='#090a12';ctx.beginPath();ctx.moveTo(-7,-2);ctx.lineTo(-2,-5);ctx.lineTo(-1,1);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.moveTo(7,-2);ctx.lineTo(2,-5);ctx.lineTo(1,1);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='#f2e9ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,3,5,.2,Math.PI-.2);ctx.stroke();
+    ctx.restore();
+  }
+
+  for(const p of particles){
+    ctx.globalAlpha=clamp(p.life/p.max,0,1);ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.color;ctx.fill();ctx.globalAlpha=1;
+  }
+  ctx.textAlign='center';ctx.font='800 11px system-ui';
+  for(const f of floaters){ctx.globalAlpha=clamp(f.life/.65,0,1);ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y);ctx.globalAlpha=1}
+}
+function loop(ts){
+  const dt=Math.min(.033,(ts-last)/1000||0);last=ts;
+  update(dt);draw();requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+function startGame(){
+  initAudio();resetUpgradeLevels();defaults();
+  $('start').classList.remove('show');$('gameover').classList.remove('show');
+  running=true;paused=false;last=performance.now();feed('영혼 수확 시작');beep(180,.08,'triangle',.03);
+}
+function endGame(){
+  if(gameOver)return;gameOver=true;running=false;paused=true;
+  const best=loadBest();
+  const now={time:Math.floor(time),kills,level:player.level};
+  const merged={time:Math.max(best.time,now.time),kills:Math.max(best.kills,now.kills),level:Math.max(best.level,now.level)};
+  localStorage.setItem('necroSoulBest',JSON.stringify(merged));showBest();
+  $('rTime').textContent=fmt(time);$('rKills').textContent=kills;$('rLevel').textContent=player.level;$('rSkels').textContent=player.skelMax;
+  $('deathText').textContent=time<30?'아니 ㅅㅂ 시작하자마자 누웠네ㅋㅋ':time<120?'오, 감 잡았는데? 한 판 더 ㄱㄱ':time<300?'이 정도면 꽤 독한 네크로맨서다.':'미친ㅋㅋㅋ 죽은 놈들이 먼저 퇴근하겠다.';
+  $('gameover').classList.add('show');beep(65,.45,'sawtooth',.04);
+}
+function loadBest(){try{return JSON.parse(localStorage.getItem('necroSoulBest'))||{time:0,kills:0,level:1}}catch{return{time:0,kills:0,level:1}}}
+function showBest(){const b=loadBest();$('bestTime').textContent=fmt(b.time);$('bestKills').textContent=b.kills;$('bestLevel').textContent=b.level}
+showBest();
+
+function togglePause(force){
+  if(!running||leveling||gameOver)return;
+  paused=force!==undefined?force:!paused;
+  $('pause').classList.toggle('show',paused);
+  $('pauseBtn').textContent=paused?'▶':'Ⅱ';
+  if(!paused)last=performance.now();
+}
+
+addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
+  if(e.code==='Space')dash();
+  if(e.code==='KeyP'||e.code==='Escape')togglePause();
+});
+addEventListener('keyup',e=>keys[e.code]=false);
+$('dashBtn').addEventListener('pointerdown',e=>{e.preventDefault();dash()});
+$('pauseBtn').onclick=()=>togglePause();
+$('resumeBtn').onclick=()=>togglePause(false);
+$('startBtn').onclick=startGame;$('retryBtn').onclick=startGame;
+$('howBtn').onclick=()=>{$('howText').style.display=$('howText').style.display==='none'?'block':'none'};
+$('soundBtn').onclick=()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'🔊':'🔇';if(soundOn)beep(420,.05)};
+
+const joyEl=$('joystick'),stick=$('stick');
+function joyUpdate(e){
+  const r=joyEl.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+  let x=e.clientX-cx,y=e.clientY-cy;const max=r.width*.34,l=Math.hypot(x,y);
+  if(l>max){x=x/l*max;y=y/l*max}
+  joy.x=x/max;joy.y=y/max;stick.style.transform=`translate(${x}px,${y}px)`;
+}
+joyEl.addEventListener('pointerdown',e=>{joy.active=true;joy.id=e.pointerId;joyEl.setPointerCapture(e.pointerId);joyUpdate(e)});
+joyEl.addEventListener('pointermove',e=>{if(joy.active&&e.pointerId===joy.id)joyUpdate(e)});
+function joyEnd(e){if(e.pointerId!==joy.id)return;joy.active=false;joy.x=joy.y=0;stick.style.transform='translate(0,0)'}
+joyEl.addEventListener('pointerup',joyEnd);joyEl.addEventListener('pointercancel',joyEnd);
+
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&running&&!paused&&!leveling)togglePause(true)});
+})();
+</script>
+</body>
+</html>
